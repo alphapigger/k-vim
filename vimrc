@@ -24,11 +24,14 @@
 "==========================================
 
 " 修改leader键
-let mapleader = ','
-let g:mapleader = ','
+let mapleader = ';'
+let g:mapleader = ';'
 
 " 开启语法高亮
 syntax on
+
+" set clipboard
+set clipboard=unnamed
 
 " install bundles
 if filereadable(expand("~/.vimrc.bundles"))
@@ -91,6 +94,8 @@ set wildignore=*.swp,*.bak,*.pyc,*.class,.svn
 set cursorcolumn
 " 突出显示当前行
 set cursorline
+" 设置边界
+set colorcolumn=80
 
 
 " 设置 退出vim后，内容显示在终端屏幕, 可以用于查看和复制, 不需要可以去掉
@@ -227,6 +232,7 @@ set relativenumber number
 au FocusLost * :set norelativenumber number
 au FocusGained * :set relativenumber
 " 插入模式下用绝对行号, 普通模式下用相对
+autocmd BufRead,BufNewFile *.thrift set filetype=thrift
 autocmd InsertEnter * :set norelativenumber number
 autocmd InsertLeave * :set relativenumber
 function! NumberToggle()
@@ -369,8 +375,8 @@ noremap H ^
 noremap L $
 
 
-" Map ; to : and save a million keystrokes 用于快速进入命令行
-nnoremap ; :
+" Map , to : and save a million keystrokes 用于快速进入命令行
+nnoremap , :
 
 
 " 命令行模式增强，ctrl - a到行首， -e 到行尾
@@ -398,8 +404,8 @@ nnoremap <silent> g* g*zz
 noremap <silent><leader>/ :nohls<CR>
 
 " switch # *
-nnoremap # *
-nnoremap * #
+" nnoremap # *
+" nnoremap * #
 
 " for # indent, python文件中输入新行时#号注释不切回行首
 autocmd BufNewFile,BufRead *.py inoremap # X<c-h>#
@@ -421,7 +427,7 @@ noremap <right> :bn<CR>
 
 " tab切换
 map <leader>th :tabfirst<cr>
-map <leader>tl :tablast<cr>
+map <leader>te :tablast<cr>
 
 map <leader>tj :tabnext<cr>
 map <leader>tk :tabprev<cr>
@@ -468,7 +474,8 @@ vnoremap > >gv
 map Y y$
 
 " 复制选中区到系统剪切板中
-vnoremap <leader>y "+y
+vnoremap <Leader>y "+y
+nmap <Leader>p "+p
 
 " auto jump to end of select
 " vnoremap <silent> y y`]
@@ -479,10 +486,10 @@ vnoremap <leader>y "+y
 map <Leader>sa ggVG"
 
 " select block
-nnoremap <leader>v V`}
+nnoremap <leader>v v`}
 
 " w!! to sudo & write a file
-cmap w!! w !sudo tee >/dev/null %
+cmap w!! w !sudo tee > /dev/null %
 
 " kj 替换 Esc
 inoremap kj <Esc>
@@ -545,14 +552,15 @@ function! AutoSetFileHead()
 
     "如果文件类型为python
     if &filetype == 'python'
-        call setline(1, "\#!/usr/bin/env python")
-        call append(1, "\# encoding: utf-8")
+        " call setline(1, "\#!/usr/bin/env python")
+        call setline(1, "\# encoding: utf-8")
     endif
 
     normal G
     normal o
     normal o
 endfunc
+nmap <F7> :call AutoSetFileHead()<CR>
 
 
 " 设置可以高亮的关键字
@@ -613,7 +621,36 @@ if has("gui_running")
     set t_Co=256
 endif
 
-
+" 替换函数。参数说明：
+" confirm：是否替换前逐一确认
+" wholeword：是否整词匹配
+" replace：被替换字符串
+function! Replace(confirm, wholeword, replace)
+    wa
+    let flag = ''
+    if a:confirm
+        let flag .= 'gec'
+    else
+        let flag .= 'ge'
+    endif
+    let search = ''
+    if a:wholeword
+        let search .= '\<' . escape(expand('<cword>'), '/\.*$^~[') . '\>'
+    else
+        let search .= expand('<cword>')
+    endif
+    let replace = escape(a:replace, '/\&~')
+    execute 'argdo %s/' . search . '/' . replace . '/' . flag . '| update'
+endfunction
+" 不确认、非整词
+nnoremap <Leader>R :call Replace(0, 0, input('Replace '.expand('<cword>').' with: '))<CR>
+" 不确认、整词
+nnoremap <Leader>rw :call Replace(0, 1, input('Replace '.expand('<cword>').' with: '))<CR>
+" 确认、非整词
+nnoremap <Leader>rc :call Replace(1, 0, input('Replace '.expand('<cword>').' with: '))<CR>
+" 确认、整词
+nnoremap <Leader>rcw :call Replace(1, 1, input('Replace '.expand('<cword>').' with: '))<CR>
+nnoremap <Leader>rwc :call Replace(1, 1, input('Replace '.expand('<cword>').' with: '))<CR>
 
 " theme主题
 set background=dark
@@ -638,3 +675,34 @@ highlight clear SpellRare
 highlight SpellRare term=underline cterm=underline
 highlight clear SpellLocal
 highlight SpellLocal term=underline cterm=underline
+
+" follow symlinked file
+function! FollowSymlink()
+  let current_file = expand('%:p')
+  " check if file type is a symlink
+  if getftype(current_file) == 'link'
+    " if it is a symlink resolve to the actual file path
+    "   and open the actual file
+    let actual_file = resolve(current_file)
+    silent! execute 'file ' . actual_file
+  end
+endfunction
+
+" set working directory to git project root
+" or directory of current file if not git project
+function! SetProjectRoot()
+  " default to the current file's directory
+  lcd %:p:h
+  let git_dir = system("git rev-parse --show-toplevel")
+  " See if the command output starts with 'fatal' (if it does, not in a git repo)
+  let is_not_git_dir = matchstr(git_dir, '^fatal:.*')
+  " if git project, change local directory to git project root
+  if empty(is_not_git_dir)
+    lcd `=git_dir`
+  endif
+endfunction
+
+" follow symlink and set working directory
+autocmd BufRead *
+  \ call FollowSymlink() |
+  \ call SetProjectRoot()

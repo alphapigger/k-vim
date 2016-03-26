@@ -78,15 +78,15 @@ set noswapfile
 
 " TODO: remove this, use gundo
 " create undo file
-if has('persistent_undo')
-  " How many undos
-  set undolevels=1000
-  " number of lines to save for undo
-  set undoreload=10000
-  " So is persistent undo ...
-  set undofile
-  " set undodir=/tmp/vimundo/
-endif
+" if has('persistent_undo')
+  " " How many undos
+  " set undolevels=1000
+  " " number of lines to save for undo
+  " set undoreload=10000
+  " " So is persistent undo ...
+  " set undofile
+  " " set undodir=/tmp/vimundo/
+" endif
 
 set wildignore=*.swp,*.bak,*.pyc,*.class,.svn
 
@@ -656,8 +656,8 @@ nnoremap <Leader>rwc :call Replace(1, 1, input('Replace '.expand('<cword>').' wi
 set background=dark
 set t_Co=256
 
-colorscheme solarized
-" colorscheme molokai
+" colorscheme solarized
+colorscheme molokai
 " colorscheme desert
 
 

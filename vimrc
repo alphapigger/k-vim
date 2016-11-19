@@ -288,6 +288,14 @@ autocmd InsertLeave * if pumvisible() == 0|pclose|endif
 " 回车即选中当前项
 inoremap <expr> <CR>       pumvisible() ? "\<C-y>" : "\<CR>"
 
+" In the quickfix window, <CR> is used to jump to the error under the
+" " cursor, so undefine the mapping there.
+autocmd BufReadPost quickfix nnoremap <buffer> <CR> <CR>
+" " quickfix window  s/v to open in split window,  ,gd/,jd => quickfix window
+" => open it
+autocmd BufReadPost quickfix nnoremap <buffer> v <C-w><Enter><C-w>L
+autocmd BufReadPost quickfix nnoremap <buffer> s <C-w><Enter><C-w>K
+
 " 上下左右键的行为 会显示其他信息
 inoremap <expr> <Down>     pumvisible() ? "\<C-n>" : "\<Down>"
 inoremap <expr> <Up>       pumvisible() ? "\<C-p>" : "\<Up>"
